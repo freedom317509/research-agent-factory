@@ -2,7 +2,7 @@ import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "./schema";
 
-const dbPath = "file:D:/projects/research-agent-factory/data/research-factory.db";
+const dbPath = process.env.DATABASE_URL || "file:./data/research-factory.db";
 
 const client = createClient({
   url: dbPath,
