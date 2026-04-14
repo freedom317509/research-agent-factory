@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/ui/header";
 import TopologyCanvas from "@/components/editor/topology-canvas";
 import AgentDetailPanel from "@/components/editor/agent-detail-panel";
 import type { AgentNode, TopologyEdge } from "@/types/topology";
-import { Loader2, Play, RefreshCw, ArrowLeft, Zap, Download } from "lucide-react";
+import { Loader2, Play, RefreshCw, ArrowLeft, Zap, Download, Plus, Trash2 } from "lucide-react";
 
 export default function TaskEditorPage({
   params,
@@ -22,6 +22,8 @@ export default function TaskEditorPage({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [taskTitle, setTaskTitle] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const nodeCounter = useRef(0);
 
   // Unpack params in useEffect — never call .then() during render
   useEffect(() => {
@@ -98,15 +100,58 @@ export default function TaskEditorPage({
     );
     setNodes(updated);
     setSelectedNode(null);
+    persistNodes(updated);
+  };
 
-    // Save to server
-    if (topologyId) {
-      fetch(`/api/topologies/${topologyId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nodes: updated }),
-      });
-    }
+  const persistNodes = (updatedNodes: AgentNode[]) => {
+    if (!topologyId) return;
+    fetch(`/api/topologies/${topologyId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nodes: updatedNodes }),
+    }).catch(console.error);
+  };
+
+  const persistEdges = (updatedEdges: TopologyEdge[]) => {
+    if (!topologyId) return;
+    fetch(`/api/topologies/${topologyId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ edges: updatedEdges }),
+    }).catch(console.error);
+  };
+
+  const handleAddNode = () => {
+    nodeCounter.current += 1;
+    const newNode: AgentNode = {
+      id: `node-${Date.now()}-${nodeCounter.current}`,
+      label: `Agent ${nodeCounter.current}`,
+      role: "custom",
+      prompt: "You are a research assistant. Describe your role.",
+      tools: ["web_search"],
+      position: { x: 100 + Math.random() * 400, y: 100 + Math.random() * 300 },
+    };
+    const updated = [...nodes, newNode];
+    setNodes(updated);
+    setSelectedNode(newNode);
+    persistNodes(updated);
+  };
+
+  const handleDeleteNode = (nodeId: string) => {
+    const updated = nodes.filter((n) => n.id !== nodeId);
+    const updatedEdges = edges.filter(
+      (e) => e.source !== nodeId && e.target !== nodeId,
+    );
+    setNodes(updated);
+    setEdges(updatedEdges);
+    if (selectedNode?.id === nodeId) setSelectedNode(null);
+    persistNodes(updated);
+    persistEdges(updatedEdges);
+  };
+
+  const handleEdgesChange = (updatedEdges: TopologyEdge[]) => {
+    setEdges(updatedEdges);
+    persistEdges(updatedEdges);
   };
 
   const handleExecute = () => {
@@ -161,6 +206,14 @@ export default function TaskEditorPage({
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={handleAddNode}
+            disabled={!topologyId}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-md transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add Agent
+          </button>
+          <button
             onClick={handleExport}
             disabled={nodes.length === 0}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-800 rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
@@ -201,20 +254,29 @@ export default function TaskEditorPage({
                 No Topology Yet
               </h2>
               <p className="text-gray-500 mb-6 max-w-md">
-                Click the button below to let AI generate a multi-agent collaboration topology for your research task.
+                Click the button below to let AI generate a multi-agent collaboration topology for your research task, or start by adding agents manually.
               </p>
-              <button
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 mx-auto"
-              >
-                {isGenerating ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Zap className="w-5 h-5" />
-                )}
-                {isGenerating ? "Generating..." : "Generate Topology"}
-              </button>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={handleGenerate}
+                  disabled={isGenerating}
+                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Zap className="w-5 h-5" />
+                  )}
+                  {isGenerating ? "Generating..." : "Generate Topology"}
+                </button>
+                <button
+                  onClick={handleAddNode}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Agent
+                </button>
+              </div>
             </div>
           </div>
         ) : (
@@ -224,6 +286,8 @@ export default function TaskEditorPage({
                 nodes={nodes}
                 edges={edges}
                 onNodeClick={handleNodeClick}
+                onEdgesChange={handleEdgesChange}
+                onNodeDelete={handleDeleteNode}
               />
             </div>
             {selectedNode && (

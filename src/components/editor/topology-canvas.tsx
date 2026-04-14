@@ -9,9 +9,12 @@ import {
   type Node,
   type Edge,
   type OnNodesChange,
+  type OnConnect,
+  type Connection,
   MarkerType,
   BackgroundVariant,
   applyNodeChanges,
+  addEdge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import AgentNode from "./agent-node";
@@ -21,6 +24,7 @@ interface CanvasNodeData extends Record<string, unknown> {
   node: AgentNodeType;
   status: string;
   onClick: () => void;
+  onDelete: () => void;
 }
 
 const nodeTypes = {
@@ -32,6 +36,8 @@ interface TopologyCanvasProps {
   edges: TopologyEdge[];
   executionStatus?: Record<string, string>;
   onNodeClick?: (nodeId: string) => void;
+  onEdgesChange?: (edges: TopologyEdge[]) => void;
+  onNodeDelete?: (nodeId: string) => void;
 }
 
 export default function TopologyCanvas({
@@ -39,6 +45,8 @@ export default function TopologyCanvas({
   edges: agentEdges,
   executionStatus = {},
   onNodeClick,
+  onEdgesChange,
+  onNodeDelete,
 }: TopologyCanvasProps) {
   const [internalNodes, setInternalNodes] = useState<Node<CanvasNodeData>[]>([]);
   const initializedRef = useRef(false);
@@ -60,6 +68,7 @@ export default function TopologyCanvas({
           node: n,
           status: "pending",
           onClick: () => onNodeClick?.(n.id),
+          onDelete: () => onNodeDelete?.(n.id),
         },
       })),
     );
@@ -107,6 +116,26 @@ export default function TopologyCanvas({
     [],
   );
 
+  const onConnect: OnConnect = useCallback(
+    (connection: Connection) => {
+      if (!connection.source || !connection.target) return;
+      // Prevent duplicate edges
+      const exists = agentEdges.some(
+        (e) => e.source === connection.source && e.target === connection.target
+      );
+      if (exists) return;
+
+      const newEdge: TopologyEdge = {
+        id: `edge-${Date.now()}`,
+        source: connection.source,
+        target: connection.target,
+      };
+      const updated = [...agentEdges, newEdge];
+      onEdgesChange?.(updated);
+    },
+    [agentEdges, onEdgesChange],
+  );
+
   const onNodeClickHandler = useCallback(
     (_event: React.MouseEvent, node: Node<CanvasNodeData>) => {
       node.data?.onClick?.();
@@ -121,12 +150,15 @@ export default function TopologyCanvas({
         edges={rfEdges}
         onNodesChange={onNodesChange}
         onNodeClick={onNodeClickHandler}
+        onConnect={onConnect}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.3 }}
         minZoom={0.2}
         maxZoom={2}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+        connectionLineStyle={{ stroke: "#8b5cf6", strokeWidth: 2 }}
+        connectionRadius={10}
       >
         <Controls
           className="!bg-gray-900 !border-gray-700 [&>button]:!bg-gray-900 [&>button]:!border-gray-700 [&>button]:!fill-gray-300 [&>button:hover]:!bg-gray-800"

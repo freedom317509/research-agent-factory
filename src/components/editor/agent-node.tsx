@@ -3,7 +3,7 @@
 import { memo } from "react";
 import { Handle, Position } from "@xyflow/react";
 import type { AgentNode } from "@/types/topology";
-import { Brain, Search, BarChart3, PenTool, Eye, GitMerge, Database, Wrench } from "lucide-react";
+import { Brain, Search, BarChart3, PenTool, Eye, GitMerge, Database, Wrench, Trash2 } from "lucide-react";
 
 const roleIcons: Record<string, typeof Brain> = {
   researcher: Search,
@@ -39,11 +39,12 @@ interface AgentNodeProps {
     node: AgentNode;
     status?: string;
     onClick?: () => void;
+    onDelete?: () => void;
   };
 }
 
 function AgentNodeComponent({ data }: AgentNodeProps) {
-  const { node, status = "pending", onClick } = data;
+  const { node, status = "pending", onClick, onDelete } = data;
   const Icon = roleIcons[node.role] || Brain;
   const colorClass = roleColors[node.role] || roleColors.custom;
   const statusClass = statusColors[status] || "";
@@ -71,6 +72,18 @@ function AgentNodeComponent({ data }: AgentNodeProps) {
           </h3>
           <span className="text-xs text-gray-500 capitalize">{node.role}</span>
         </div>
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm(`Delete "${node.label}"?`)) onDelete();
+            }}
+            className="p-1 hover:bg-gray-700 rounded transition-colors"
+            title="Delete node"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-gray-500 hover:text-red-400" />
+          </button>
+        )}
         {/* Status dot */}
         <div
           className={`w-2 h-2 rounded-full ${
