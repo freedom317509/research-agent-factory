@@ -143,6 +143,14 @@ export default function TopologyCanvas({
     [],
   );
 
+  const onEdgeDoubleClick = useCallback(
+    (_event: React.MouseEvent, edge: Edge) => {
+      const updated = agentEdges.filter((e) => e.id !== edge.id);
+      onEdgesChange?.(updated);
+    },
+    [agentEdges, onEdgesChange],
+  );
+
   return (
     <div className="w-full h-full bg-gray-950">
       <ReactFlow
@@ -151,6 +159,7 @@ export default function TopologyCanvas({
         onNodesChange={onNodesChange}
         onNodeClick={onNodeClickHandler}
         onConnect={onConnect}
+        onEdgeDoubleClick={onEdgeDoubleClick}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.3 }}
