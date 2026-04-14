@@ -63,6 +63,100 @@ npm run dev
 
 Open http://localhost:3000 in your browser. / 打开 http://localhost:3000
 
+## Detailed Setup Guide / 详细使用指南
+
+### Prerequisites / 环境要求
+
+| Software / 软件 | Minimum Version / 最低版本 | Check / 检查 |
+|---|---|---|
+| Node.js | v18+ | `node -v` |
+| npm | v9+ | `npm -v` |
+
+Install Node.js from https://nodejs.org
+
+### Step-by-Step Guide / 详细步骤
+
+#### 1. Clone the repository / 克隆仓库
+
+```bash
+git clone https://github.com/freedom317509/research-agent-factory.git
+cd research-agent-factory
+```
+
+#### 2. Install dependencies / 安装依赖
+
+```bash
+npm install
+```
+
+This takes ~30 seconds and creates the `node_modules/` directory.
+安装大约 30 秒，完成后会多出 `node_modules/` 目录。
+
+#### 3. Configure API Keys / 配置 API Key
+
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local` and fill in at least one LLM API key:
+编辑 `.env.local`，填入至少一个 LLM 的 API Key：
+
+```env
+# Use Claude (recommended) / 使用 Claude（推荐）
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx
+
+# Or use OpenAI / 或使用 OpenAI
+OPENAI_API_KEY=sk-proj-xxxxxxxxxxxx
+```
+
+**How to get API keys / 获取 API Key：**
+- Anthropic: https://console.anthropic.com/settings/keys → Create Key
+- OpenAI: https://platform.openai.com/api-keys → Create new secret key
+
+#### 4. Initialize the database / 初始化数据库
+
+```bash
+npx drizzle-kit push
+```
+
+This creates `data/research-factory.db` with 4 tables:
+自动在 `data/` 目录下创建数据库文件，建好 4 张表：
+- `tasks` — research tasks / 研究任务
+- `topologies` — agent topology structures / Agent 拓扑结构
+- `execution_logs` — execution logs / 执行日志
+- `templates` — reusable templates / 可复用模板
+
+#### 5. Start the dev server / 启动开发服务器
+
+```bash
+npm run dev
+```
+
+You should see: / 看到类似输出即成功：
+
+```
+▲ Next.js 16.x.x  - Local:        http://localhost:3000
+```
+
+### How to Use the App / 在应用里怎么用
+
+1. **Home page / 首页** — See the task list, click "New Task" to create one.
+2. **Create task / 创建任务** — Enter a research description, e.g. "Write a literature review on LLM applications in healthcare".
+3. **Generate topology / 生成拓扑** — AI automatically generates an agent collaboration plan (Researcher → Analyst → Writer → Reviewer).
+4. **Edit topology / 编辑拓扑** — Drag nodes on the canvas, modify prompts and tools for each agent.
+5. **Execute / 执行** — Click execute, the system dispatches agents in dependency order with real-time logs.
+6. **View history / 查看历史** — Browse completed tasks in the history page.
+7. **Save templates / 保存模板** — Save useful topologies for one-click reuse.
+
+### Troubleshooting / 常见问题
+
+| Problem / 问题 | Solution / 解决 |
+|---|---|
+| `npm install` fails | Check Node.js version, recommend v20+. 检查 Node.js 版本，建议 v20+ |
+| Missing API key error | At least one of `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` is required. 必须至少配置一个 API Key |
+| `drizzle-kit push` fails | Ensure `data/` directory exists: `mkdir data` then retry. 确保 `data/` 目录存在 |
+| Port 3000 in use | Change port: `npm run dev -- -p 3001`. 改端口启动 |
+
 ## Project Structure / 项目结构
 
 ```
