@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/ui/header";
-import MessageBubble from "@/components/chat/message-bubble";
+import MessageBubble, { ThinkingIndicator } from "@/components/chat/message-bubble";
 import ChatInput from "@/components/chat/chat-input";
 import TopologySelector, { type TopologyOption } from "@/components/chat/topology-selector";
 import { Loader2, Plus, MessageCircle } from "lucide-react";
@@ -17,6 +17,7 @@ export default function ChatPage() {
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [streamingContent, setStreamingContent] = useState<string>("");
+  const [thinkingStages, setThinkingStages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -113,6 +114,7 @@ export default function ChatPage() {
     };
     setMessages((prev) => [...prev, tempUserMsg]);
     setStreamingContent("");
+    setThinkingStages(["正在接收请求..."]);
     setIsSending(true);
 
     try {
@@ -133,14 +135,23 @@ export default function ChatPage() {
 
       const decoder = new TextDecoder();
       let assistantContent = "";
+      let hasReceivedData = false;
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         const chunk = decoder.decode(value);
         assistantContent += chunk;
+
+        if (!hasReceivedData) {
+          setThinkingStages(["正在接收请求...", "Agent 已开始回答"]);
+          hasReceivedData = true;
+        }
+
         setStreamingContent(assistantContent);
       }
+
+      setThinkingStages([]);
 
       // Replace temp message with real messages
       const userMsg: ChatMessage = {
@@ -262,6 +273,9 @@ export default function ChatPage() {
                     {messages.map((msg) => (
                       <MessageBubble key={msg.id} message={msg} />
                     ))}
+                    {isSending && thinkingStages.length > 0 && !streamingContent && (
+                      <ThinkingIndicator stages={thinkingStages} />
+                    )}
                     {streamingContent && (
                       <MessageBubble
                         message={{
@@ -272,6 +286,11 @@ export default function ChatPage() {
                           createdAt: new Date(),
                         }}
                       />
+                    )}
+                    {streamingContent && isSending && (
+                      <div className="flex justify-start mb-4 -mt-2">
+                        <span className="text-xs text-purple-400 animate-pulse">正在接收回答...</span>
+                      </div>
                     )}
                   </>
                 )}

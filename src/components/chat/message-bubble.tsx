@@ -1,6 +1,7 @@
 "use client";
 
 import type { ChatMessage } from "@/types/chat";
+import { Loader2, Brain } from "lucide-react";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -51,6 +52,50 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             hour: "2-digit",
             minute: "2-digit",
           })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface ThinkingIndicatorProps {
+  stages?: string[];
+}
+
+export function ThinkingIndicator({ stages }: ThinkingIndicatorProps) {
+  const currentStage = stages?.[stages.length - 1] || "正在处理请求...";
+
+  return (
+    <div className="flex justify-start mb-4">
+      <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-gray-800 text-gray-100 rounded-bl-md">
+        <div className="flex items-center gap-2 mb-2">
+          <Brain className="w-4 h-4 text-purple-400 animate-pulse" />
+          <span className="text-sm font-medium text-purple-400">思考中</span>
+          <Loader2 className="w-3.5 h-3.5 text-purple-400 animate-spin" />
+        </div>
+
+        {/* Progress stages */}
+        <div className="space-y-1.5">
+          {stages && stages.length > 0 && stages.map((stage, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs">
+              <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${
+                i === stages.length - 1
+                  ? "bg-purple-500/20 text-purple-400"
+                  : "bg-green-500/20 text-green-400"
+              }`}>
+                {i === stages.length - 1 ? (
+                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                ) : (
+                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+              <span className={i === stages.length - 1 ? "text-purple-300" : "text-gray-400"}>
+                {stage}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
