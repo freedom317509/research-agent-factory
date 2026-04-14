@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* React Flow overrides */
+.react-flow__node {
+  z-index: 1;
+}
+
+.react-flow__edge-path {
+  stroke-width: 2;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+
+/* Agent node role colors */
+.role-researcher { --node-color: #3b82f6; }
+.role-analyst { --node-color: #8b5cf6; }
+.role-writer { --node-color: #10b981; }
+.role-reviewer { --node-color: #f59e0b; }
+.role-coordinator { --node-color: #ef4444; }
+.role-data_collector { --node-color: #06b6d4; }
+.role-methodologist { --node-color: #ec4899; }
+.role-custom { --node-color: #6b7280; }
+
+/* Status colors */
+.status-pending { --status-color: #6b7280; }
+.status-running { --status-color: #3b82f6; }
+.status-completed { --status-color: #10b981; }
+.status-failed { --status-color: #ef4444; }
