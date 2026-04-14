@@ -43,8 +43,44 @@ export const templates = sqliteTable("templates", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
-  category: text("category").notNull(), // literature_review, data_analysis, experiment, etc.
-  topology: text("topology").notNull(), // JSON string
+  category: text("category").notNull(),
+  topology: text("topology").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export const chatSessions = sqliteTable("chat_sessions", {
+  id: text("id").primaryKey(),
+  topologyId: text("topology_id").notNull().references(() => topologies.id),
+  title: text("title").notNull().default("New Chat"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export const chatMessages = sqliteTable("chat_messages", {
+  id: text("id").primaryKey(),
+  chatSessionId: text("chat_session_id").notNull().references(() => chatSessions.id),
+  role: text("role").notNull(), // "user" | "assistant"
+  content: text("content").notNull(),
+  fileIds: text("file_ids"), // JSON array
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export const uploadedFiles = sqliteTable("uploaded_files", {
+  id: text("id").primaryKey(),
+  chatSessionId: text("chat_session_id").notNull().references(() => chatSessions.id),
+  filename: text("filename").notNull(),
+  filePath: text("file_path").notNull(),
+  fileType: text("file_type").notNull(),
+  content: text("content"), // extracted text
+  size: integer("size").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

@@ -18,6 +18,8 @@
   **模板系统** — 保存常用拓扑为模板（文献综述、数据分析、实验设计等），一键复用。
 - **Task History** — Full task lifecycle tracking and archival.
   **任务历史** — 完整的任务生命周期追踪与回溯。
+- **Chat Interface** — Interactive chat with your agent topology, with file upload support (.txt, .md, .csv, .pdf, .docx, images). Available on `/chat` page or as a tab in the task editor.
+  **聊天界面** — 与 Agent 拓扑进行交互式对话，支持上传文件（.txt、.md、.csv、.pdf、.docx、图片）。可通过 `/chat` 页面或任务编辑器中的 Chat Tab 使用。
 
 ## Tech Stack / 技术栈
 
@@ -119,12 +121,15 @@ OPENAI_API_KEY=sk-proj-xxxxxxxxxxxx
 npx drizzle-kit push
 ```
 
-This creates `data/research-factory.db` with 4 tables:
-自动在 `data/` 目录下创建数据库文件，建好 4 张表：
+This creates `data/research-factory.db` with 7 tables:
+自动在 `data/` 目录下创建数据库文件，建好 7 张表：
 - `tasks` — research tasks / 研究任务
 - `topologies` — agent topology structures / Agent 拓扑结构
 - `execution_logs` — execution logs / 执行日志
 - `templates` — reusable templates / 可复用模板
+- `chat_sessions` — chat sessions / 聊天会话
+- `chat_messages` — chat message history / 聊天消息历史
+- `uploaded_files` — uploaded file attachments / 上传的文件附件
 
 #### 5. Start the dev server / 启动开发服务器
 
@@ -147,6 +152,8 @@ You should see: / 看到类似输出即成功：
 5. **Execute / 执行** — Click execute, the system dispatches agents in dependency order with real-time logs.
 6. **View history / 查看历史** — Browse completed tasks in the history page.
 7. **Save templates / 保存模板** — Save useful topologies for one-click reuse.
+8. **Chat with topology / 与拓扑对话** — Go to `/chat` page or click the "Chat" button in the task editor. Select a topology, create a session, and start asking questions. You can upload files (.txt, .md, .pdf, .docx, images) and the agent pipeline will process them.
+   **聊天功能** — 进入 `/chat` 页面或点击任务编辑器中的 "Chat" 按钮。选择拓扑，创建会话，开始提问。可以上传文件，Agent 流水线会处理文件内容并回答。
 
 ### Troubleshooting / 常见问题
 
@@ -167,13 +174,16 @@ src/
     tasks/[id]/execute/         # Execution console (live logs) / 执行控制台（实时日志）
     history/                    # Task archive / 历史任务归档
     templates/                  # Template management / 模板管理
+    chat/                       # Chat interface / 聊天界面
     api/
       tasks/                    # Task CRUD + topology generation / 任务 CRUD + 拓扑生成
       templates/                # Template CRUD / 模板 CRUD
       topologies/               # Topology management + execution / 拓扑管理 + 执行入口
+      chat/                     # Chat API (sessions, messages, upload) / 聊天 API
   components/
     editor/                     # Topology editor components / 拓扑编辑器组件
     execution/                  # Execution log components / 执行日志组件
+    chat/                       # Chat UI components (message-bubble, chat-input, etc.) / 聊天界面组件
   db/
     schema.ts                   # Drizzle schema (tasks, topologies, execution_logs, templates)
     index.ts                    # DB connection / 数据库连接
@@ -181,6 +191,8 @@ src/
     topology-generator.ts       # LLM-driven topology generation / LLM 驱动的拓扑生成
     pipeline-executor.ts        # Pipeline executor (topo sort → parallel dispatch) / 流水线执行引擎
     template-manager.ts         # Template management / 模板管理
+    file-extractor.ts           # File content extraction (pdf, docx, txt, etc.) / 文件内容提取
+    chat-executor.ts            # Chat execution with streaming / 聊天流式执行
   types/
     topology.ts                 # Core types (AgentNode, Topology, ExecutionLog, Task) / 核心类型定义
 ```
@@ -203,6 +215,10 @@ LLM generates topology / LLM 生成拓扑
     ▼
 Executor dispatches via topological sort → live logs → final output
 执行引擎按拓扑排序调度 → 实时日志 → 最终输出
+
+Chat Flow / 聊天流程:
+User asks question / uploads file → Inject into first agent node → Topo sort execution → Stream response
+用户提问/上传文件 → 注入到首个 Agent 节点 → 拓扑排序执行 → 流式返回回答
 ```
 
 ## Core Concepts / 核心概念

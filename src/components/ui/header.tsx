@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Beaker, History, LayoutGrid, Sparkles } from "lucide-react";
+import { Beaker, History, LayoutGrid, MessageCircle, Sparkles } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutGrid },
   { href: "/history", label: "History", icon: History },
   { href: "/templates", label: "Templates", icon: Beaker },
+  { href: "/chat", label: "Chat", icon: MessageCircle },
 ];
 
 export default function Header() {

@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/ui/header";
 import TopologyCanvas from "@/components/editor/topology-canvas";
 import AgentDetailPanel from "@/components/editor/agent-detail-panel";
+import EditorChatView from "@/components/chat/editor-chat-view";
 import type { AgentNode, TopologyEdge } from "@/types/topology";
-import { Loader2, Play, RefreshCw, ArrowLeft, Zap, Download, Plus, Trash2 } from "lucide-react";
+import { Loader2, Play, RefreshCw, ArrowLeft, Zap, Download, Plus, Trash2, MessageCircle } from "lucide-react";
 
 export default function TaskEditorPage({
   params,
@@ -23,6 +24,7 @@ export default function TaskEditorPage({
   const [isLoading, setIsLoading] = useState(true);
   const [taskTitle, setTaskTitle] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<"canvas" | "chat">("canvas");
   const nodeCounter = useRef(0);
 
   // Unpack params in useEffect — never call .then() during render
@@ -268,12 +270,27 @@ export default function TaskEditorPage({
             <Play className="w-3.5 h-3.5" />
             Execute
           </button>
+          <div className="w-px h-5 bg-gray-700 mx-1" />
+          <button
+            onClick={() => setViewMode(viewMode === "canvas" ? "chat" : "canvas")}
+            disabled={!topologyId}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors disabled:bg-gray-700 disabled:text-gray-500 ${
+              viewMode === "chat"
+                ? "bg-cyan-600 text-white"
+                : "text-gray-300 hover:bg-gray-800"
+            }`}
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            Chat
+          </button>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {nodes.length === 0 ? (
+        {viewMode === "chat" && topologyId ? (
+          <EditorChatView topologyId={topologyId} />
+        ) : nodes.length === 0 ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <Zap className="w-16 h-16 text-gray-700 mx-auto mb-4" />
