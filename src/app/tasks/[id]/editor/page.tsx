@@ -121,7 +121,7 @@ export default function TaskEditorPage({
     }).catch(console.error);
   };
 
-  const handleAddNode = () => {
+  const handleAddNode = async () => {
     nodeCounter.current += 1;
     const newNode: AgentNode = {
       id: `node-${Date.now()}-${nodeCounter.current}`,
@@ -131,6 +131,33 @@ export default function TaskEditorPage({
       tools: ["web_search"],
       position: { x: 100 + Math.random() * 400, y: 100 + Math.random() * 300 },
     };
+
+    // If no topology exists yet, create one first
+    let currentTopologyId = topologyId;
+    if (!currentTopologyId && taskId) {
+      const newTopologyId = `topo-${Date.now()}`;
+      const res = await fetch("/api/topologies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: newTopologyId,
+          taskId,
+          nodes: [newNode],
+          edges: [],
+          layout: { [newNode.id]: newNode.position },
+        }),
+      });
+      if (!res.ok) {
+        console.error("Failed to create topology");
+        return;
+      }
+      const data = await res.json();
+      setTopologyId(data.id);
+      setNodes([newNode]);
+      setSelectedNode(newNode);
+      return;
+    }
+
     const updated = [...nodes, newNode];
     setNodes(updated);
     setSelectedNode(newNode);
@@ -207,7 +234,7 @@ export default function TaskEditorPage({
         <div className="flex items-center gap-2">
           <button
             onClick={handleAddNode}
-            disabled={!topologyId}
+            disabled={!taskId}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-md transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
