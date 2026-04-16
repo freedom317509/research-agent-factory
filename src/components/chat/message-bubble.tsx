@@ -7,8 +7,41 @@ interface MessageBubbleProps {
   message: ChatMessage;
 }
 
+/**
+ * Strip markdown formatting for cleaner plain-text display.
+ * Removes **bold**, *italic*, ### headers, --- horizontal rules, > blockquotes,
+ * [link](url) patterns, and ``` code fences.
+ */
+function stripMarkdown(text: string): string {
+  return text
+    // Remove code fences
+    .replace(/```[\s\S]*?```/g, (match) => match.replace(/```/g, "").trim())
+    // Remove headers
+    .replace(/^#{1,6}\s+/gm, "")
+    // Remove bold/italic markers
+    .replace(/\*\*\*(.+?)\*\*\*/g, "$1")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/__(.+?)__/g, "$1")
+    .replace(/_(.+?)_/g, "$1")
+    // Remove inline code
+    .replace(/`(.+?)`/g, "$1")
+    // Remove links but keep text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    // Remove blockquote markers
+    .replace(/^>\s+/gm, "")
+    // Remove horizontal rules
+    .replace(/^[-*_]{3,}\s*$/gm, "")
+    // Remove image syntax
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+    // Clean up extra blank lines
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export default function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === "user";
+  const displayContent = isUser ? message.content : stripMarkdown(message.content);
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
@@ -39,7 +72,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
 
         {/* Message content */}
         <div className="text-sm whitespace-pre-wrap leading-relaxed">
-          {message.content}
+          {displayContent}
         </div>
 
         {/* Timestamp */}

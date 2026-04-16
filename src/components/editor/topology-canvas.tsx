@@ -59,19 +59,21 @@ export default function TopologyCanvas({
       return;
     }
     initializedRef.current = true;
-    setInternalNodes(
-      agentNodes.map((n) => ({
+    setInternalNodes((prev) => {
+      // Build a map of existing node positions
+      const existingPositions = new Map(prev.map((n) => [n.id, n.position]));
+      return agentNodes.map((n) => ({
         id: n.id,
         type: "agent",
-        position: n.position || { x: 0, y: 0 },
+        position: existingPositions.get(n.id) || n.position || { x: 0, y: 0 },
         data: {
           node: n,
           status: "pending",
           onClick: () => onNodeClick?.(n.id),
           onDelete: () => onNodeDelete?.(n.id),
         },
-      })),
-    );
+      }));
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentNodes.length]);
 

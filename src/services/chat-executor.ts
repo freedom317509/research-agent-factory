@@ -70,9 +70,8 @@ interface ChatMessage {
   fileContent?: string;
 }
 
-export interface StreamedChatResult {
+interface StreamedChatResult {
   stream: ReadableStream<string>;
-  finalOutput: string;
 }
 
 /**
@@ -174,10 +173,7 @@ export async function executeChatStream(
     const result = await executeAgentNode(node, upstreamOutputs, isLast);
 
     if (isLast && result.stream) {
-      return {
-        stream: result.stream,
-        finalOutput: await collectStream(result.stream),
-      };
+      return { stream: result.stream };
     }
 
     outputs[nodeId] = result.output;
@@ -185,21 +181,6 @@ export async function executeChatStream(
 
   // Fallback (shouldn't reach here)
   throw new Error("No streamable node found");
-}
-
-async function collectStream(stream: ReadableStream<string>): Promise<string> {
-  const reader = stream.getReader();
-  let result = "";
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      result += value;
-    }
-  } finally {
-    reader.releaseLock();
-  }
-  return result;
 }
 
 /**

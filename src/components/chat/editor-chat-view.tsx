@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import MessageBubble, { ThinkingIndicator } from "@/components/chat/message-bubble";
 import ChatInput from "@/components/chat/chat-input";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import type { ChatMessage, UploadedFile } from "@/types/chat";
 
 interface EditorChatViewProps {
@@ -16,23 +16,28 @@ export default function EditorChatView({ topologyId }: EditorChatViewProps) {
   const [streamingContent, setStreamingContent] = useState<string>("");
   const [thinkingStages, setThinkingStages] = useState<string[]>([]);
   const [isSending, setIsSending] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-create session
-  useEffect(() => {
+  const startNewChat = useCallback(async () => {
+    setIsCreating(true);
     const id = `session-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    fetch("/api/chat/sessions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, topologyId }),
-    })
-      .then((r) => r.json())
-      .then(() => {
+    try {
+      const res = await fetch("/api/chat/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, topologyId }),
+      });
+      if (res.ok) {
         setSessionId(id);
-        setIsReady(true);
-      })
-      .catch(console.error);
+        setMessages([]);
+        setStreamingContent("");
+      }
+    } catch (error) {
+      console.error("Failed to create session:", error);
+    } finally {
+      setIsCreating(false);
+    }
   }, [topologyId]);
 
   // Auto-scroll
@@ -127,10 +132,29 @@ export default function EditorChatView({ topologyId }: EditorChatViewProps) {
     }
   }, [sessionId]);
 
-  if (!isReady) {
+  if (!sessionId) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
+      <div className="flex-1 flex flex-col items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-400 mb-4 text-sm">Click below to start a new chat session</p>
+          <button
+            onClick={startNewChat}
+            disabled={isCreating}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg transition-colors text-sm"
+          >
+            {isCreating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" />
+                Start New Chat
+              </>
+            )}
+          </button>
+        </div>
       </div>
     );
   }

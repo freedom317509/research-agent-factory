@@ -73,11 +73,11 @@ export async function POST(
       fileIds: fileIds ? JSON.stringify(fileIds) : null,
     });
 
-    // Update session title on first message
+    // Get updated history (includes the user message we just saved)
     const history = await getSessionHistory(sessionId);
 
     // Execute chat with streaming
-    const { stream, finalOutput } = await executeChatStream(
+    const { stream } = await executeChatStream(
       nodes,
       edges,
       content,
@@ -85,39 +85,33 @@ export async function POST(
       history,
     );
 
-    // Save assistant message
-    const assistantMsgId = `msg-${Date.now()}-assistant`;
-    await db.insert(chatMessages).values({
-      id: assistantMsgId,
-      chatSessionId: sessionId,
-      role: "assistant",
-      content: finalOutput,
-    });
-
-    // Update session updatedAt
-    await db
-      .update(chatSessions)
-      .set({ updatedAt: new Date() })
-      .where(eq(chatSessions.id, sessionId));
-
-    // Create a readable stream that echoes the output
+    // Collect the stream output for DB saving while also streaming to client
     const encoder = new TextEncoder();
+    const reader = stream.getReader();
+    let fullOutput = "";
+
     const readable = new ReadableStream({
-      async start(controller) {
-        // Re-stream the chunks from the original stream
-        const reader = stream.getReader();
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-              controller.close();
-              break;
-            }
-            controller.enqueue(encoder.encode(value));
-          }
-        } catch (error) {
-          controller.error(error);
+      async pull(controller) {
+        const { done, value } = await reader.read();
+        if (done) {
+          // Save assistant message after streaming completes
+          const assistantMsgId = `msg-${Date.now()}-assistant`;
+          await db.insert(chatMessages).values({
+            id: assistantMsgId,
+            chatSessionId: sessionId,
+            role: "assistant",
+            content: fullOutput,
+          });
+          // Update session updatedAt
+          await db
+            .update(chatSessions)
+            .set({ updatedAt: new Date() })
+            .where(eq(chatSessions.id, sessionId));
+          controller.close();
+          return;
         }
+        fullOutput += value;
+        controller.enqueue(encoder.encode(value));
       },
     });
 
